@@ -20,8 +20,17 @@ export async function GET(
 
     // Site ID'sini referer'dan al
     const referer = request.headers.get('referer') || '';
-    const url = new URL(referer);
-    const siteId = url.hostname;
+    let siteId = '';
+    try {
+      const url = new URL(referer);
+      siteId = url.hostname;
+    } catch {
+      return new NextResponse('Invalid referer', { status: 400 });
+    }
+
+    if (!siteId) {
+      return new NextResponse('No referer', { status: 400 });
+    }
 
     // Site kontrolü
     const siteRef = adminDb.ref(`sites`);
@@ -32,12 +41,19 @@ export async function GET(
     if (sitesSnapshot.exists()) {
       const sites = sitesSnapshot.val();
       for (const [uid, userSites] of Object.entries(sites)) {
-        if (typeof userSites === 'object') {
-          for (const [siteUid, site] of Object.entries(userSites as any)) {
-            if (site.url && new URL(site.url).hostname === siteId) {
-              foundSite = true;
-              userId = uid;
-              break;
+        if (userSites && typeof userSites === 'object') {
+          for (const [siteUid, siteData] of Object.entries(userSites as Record<string, any>)) {
+            if (siteData && siteData.url) {
+              try {
+                const siteUrl = new URL(siteData.url);
+                if (siteUrl.hostname === siteId) {
+                  foundSite = true;
+                  userId = uid;
+                  break;
+                }
+              } catch {
+                continue;
+              }
             }
           }
         }
@@ -68,22 +84,25 @@ export async function GET(
       <script>
         (function() {
           // Adsterra veya diğer ağ kodları
-          ${adData.code}
+          try {
+            ${adData.code || ''}
+          } catch(e) {
+            console.error('Ad script error:', e);
+          }
           
           // Tıklama takibi
           document.addEventListener('click', function(e) {
             var target = e.target;
-            while (target) {
+            while (target && target !== document.body) {
               if (target.tagName === 'A' && target.href) {
-                // Click takibi için API çağrısı
-                fetch('/api/track-click', {
+                fetch('${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/track-click', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
                     adId: '${adId}',
                     siteId: '${siteId}'
                   })
-                });
+                }).catch(function() {});
                 break;
               }
               target = target.parentElement;
