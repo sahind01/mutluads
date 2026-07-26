@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
     if (snapshot.exists()) {
       const sites = snapshot.val();
       for (const [uid, userSites] of Object.entries(sites)) {
-        if (typeof userSites === 'object') {
-          for (const [siteUid, site] of Object.entries(userSites as any)) {
-            if (site.id === siteId) {
+        if (userSites && typeof userSites === 'object') {
+          for (const [siteUid, siteData] of Object.entries(userSites as Record<string, any>)) {
+            if (siteData && siteData.id === siteId) {
               userId = uid;
               break;
             }
