@@ -18,10 +18,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="tr">
-      <body className={`${inter.className} bg-dark-950 text-white min-h-screen`}>
+      <body className={inter.className}>
         <AuthProvider>
           {children}
-          <Toaster position="top-right" />
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              className: 'toast-custom',
+              duration: 4000,
+              style: {
+                background: '#1f2937',
+                color: '#ffffff',
+                border: '1px solid #374151',
+              },
+            }}
+          />
         </AuthProvider>
       </body>
     </html>
